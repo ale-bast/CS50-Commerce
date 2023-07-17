@@ -1,0 +1,93 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+  <div class="card">
+    <div class="row">
+      <div class="col">
+        {% if listing.image_url %}
+          <img src="{{ listing.image_url }}" class="card-img-top" alt="{{ listing.title }}">
+        {% endif %}
+      </div>
+      <div class="col">
+        <div class="card-body">
+          <h3 class="card-title">{{ listing.title }}</h3>
+          <p class="card-text">{{ listing.description }}</p>
+          <p class="card-text">
+            <h3>
+              {% if highest_bid %}
+                ${{ highest_bid.amount }}
+              {% else %}
+                ${{ listing.starting_price }}
+              {% endif %}
+            </h3>
+          </p>
+          <p class="card-text">Listed by: {{ listing.created_by }}</p>
+          <p class="card-text">Category: 
+              {% if listing.category %}
+                {{ listing.category }}
+              {% else %}
+                No Category Listed
+              {% endif %}
+          </p>
+          {% if user.is_authenticated %}
+            {% if listing.closed == False %}
+              {% if user in watchers %}
+                <form action="{% url 'remove_watchlist' listing.id %}" method="post" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-warning">Remove from Watchlist</button>
+                </form>
+              {% else %}
+                <form action="{% url 'add_watchlist' listing.id %}" method="post" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-primary">Add to Watchlist</button>
+                </form>
+              {% endif %}
+              {% if listing.created_by == user %}
+                <form action="{% url 'close_auction' listing.id %}" method="post" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-danger">Close Auction</button>
+                </form>
+              {% endif %}
+              <p class="card-text">{{ listing.bid.all.count }} bid(s) so far.
+                {% if highest_bid.user == user %}
+                  Your bid is the current bid.
+                {% endif %}
+              </p>
+              <form action="{% url 'place_bid' listing.id %}" method="post" class="d-inline">
+                {% csrf_token %}
+                <input type="number" name="bid_amount" min="{{ listing.starting_bid }}" step="0.01" required>
+                <button type="submit" class="btn btn-primary">Place Bid</button>
+              </form>
+              {% if message %}
+                <div>{{ message }}</div>
+              {% endif %}
+            {% else %}
+              {% if highest_bid.user == user %}
+                <p class="card-text">You won this auction!</p>
+              {% endif %}
+            {% endif %}
+          {% endif %}
+        </div>
+        <h3>Comments</h3>
+        <ul>
+          {% for comment in comments %}
+          <li>
+            <strong>{{ comment.user.username }} | {{ comment.timestamp|date:"F d, Y H:i" }}</strong><br>
+            {{ comment.text }}
+          </li>
+          {% empty %}
+            <p>No comments yet.</p>
+          {% endfor %}
+        </ul>
+        {% if user.is_authenticated %}
+          <h3>Add a Comment</h3>
+          <form action="{% url 'add_comment' listing.id %}" method="post">
+            {% csrf_token %}
+            <textarea name="text" rows="1" cols="40" required></textarea>
+            <button type="submit" class="btn btn-primary">Add Comment</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}
